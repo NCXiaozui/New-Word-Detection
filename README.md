@@ -1,5 +1,4 @@
-# **新词发现算法**  
-**New Word Detection**  
+# **新词发现算法**(**New Word Detection**)   
 **参考：**  
 **Reference:**  
   - 算法（Algorithm）：
