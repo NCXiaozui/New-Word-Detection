@@ -1,8 +1,7 @@
-# New-Word-Detection
-新词发现算法  
-New Word Detection  
-参考：  
-Reference:  
+# **新词发现算法**  
+# **New Word Detection**  
+**参考：**  
+**Reference:**  
   - 算法（Algorithm）：
     - >http://www.matrix67.com/blog/archives/5044  
   - 代码（Code）：  
