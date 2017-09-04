@@ -53,7 +53,7 @@ class segdocument(object):
     reference:
 
     '''
-    def __init__(self,doc,max_word_len=5,min_tf=0.000005,min_entropy=0.07,min_pmi=5):
+    def __init__(self,doc,max_word_len=5,min_tf=0.000005,min_entropy=0.07,min_pmi=6):
         super(segdocument,self).__init__()
         self.max_word_len = max_word_len
         self.min_tf = min_tf
@@ -61,12 +61,18 @@ class segdocument(object):
         self.min_pmi = min_pmi
         #analysis documents
         self.word_info = self.gen_words(doc)
+        count = float(len(self.word_info))
+        self.avg_frq = sum(map(lambda w : w.freq,self.word_info))/count
+        self.avg_entropy = sum(map(lambda w : min(w.left,w.right),self.word_info))/count
+        self.avg_pmi = sum(map(lambda w:w.pmi,self.word_info)) / count
         filter_function = lambda f:len(f.text) > 1 and f.pmi > self.min_pmi and f.freq > self.min_tf\
                                    and min(f.left,f.right) > self.min_entropy
         self.word_tf_pmi_ent = map(lambda w :(w.text,len(w.text),w.freq,w.pmi,min(w.left,w.right)),filter(filter_function,self.word_info))
 
     def gen_words(self,doc):
-        pattern = re.compile('[：“。”，！？、《》……；’‘ \n——\r\t]'.decode('utf-8'))
+        #pattern = re.compile('[：“。”，！？、《》……；’‘\n——\r\t）、（——^[1-9]d*$]')
+        #pattern = re.compile('[\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？?：、~@#”“￥：%……&*（）]+|[[A-Za-z0-9]*$]'.decode('utf-8'))
+        pattern = re.compile(u'[\\s\\d,.<>/?:;\'\"[\\]{}()\\|~!@#$%^&*\\-_=+a-zA-Z，。《》、？：；“”‘’｛｝【】（）…￥！—┄－]+')
         doc = pattern.sub(r'',doc)
         word_index = extract_cadicateword(doc,self.max_word_len)
         word_cad = {} #后选词的字典
@@ -93,21 +99,38 @@ class segdocument(object):
 if __name__ == '__main__':
         starttime = time.clock()
         path = os.path.abspath('.')
-        decode_list = ['gb18030','gbk','utf-8','ISO-8859-2'] #providing multiple decode ways
+        wordlist = []
+        word_candidate = []
+        dict_bank = []
+        dict_path = path + '/dict.txt'
+        decode_list = ['gb18030','gbk','utf-8','ISO-8859-2','unicode'] #providing multiple decode ways
         for decode_way in decode_list:
             try:
-                doc = open(path+'/xiyouji.txt','r').read().decode(decode_way)
+                doc = open(path+'/guangkai.txt','r').read().decode(decode_way)
                 print 'Great!{0} success to decode the document!!!'.format(decode_way)
                 break
             except:
                 print 'Oops!{0} cannot decode the document!'.format(decode_way)
-        word = segdocument(doc)
-        wordlist = []
-        print 'result'
+        word = segdocument(doc,max_word_len=4,min_tf=0,min_entropy=0.05,min_pmi=3.3)
+        print '平均频率:'+ str(word.avg_frq)
+        print '平均pmi:' + str(word.avg_pmi)
+        print '平均自由度:'+ str(word.avg_entropy)
+
+        for i in open(dict_path,'r'):
+            dict_bank.append(i.split(' ')[0])
+
+        print 'result:'
         for i in word.word_tf_pmi_ent:
-            wordlist.append([i[0].encode('utf-8'),i[1],i[2],i[3]])
-        seg = pd.DataFrame(wordlist,columns=['word','length','pmi','entropy'])
+            if i[0].encode('utf-8') not in dict_bank:
+                word_candidate.append(i[0].encode('utf-8'))
+                wordlist.append([i[0].encode('utf-8'),i[1],i[2],i[3],i[4]])
+        seg = pd.DataFrame(wordlist,columns=['word','length','fre','pmi','entropy'])
         seg.to_csv(path+'/extractword.csv',index=False)
+        # intersection = set(word_candidate) & set(dict_bank)
+        # newwordset = set(word_candidate) - intersection
+        for i in wordlist:
+            print i[0],i[1],i[2],i[3],i[4]
+
         endtime = time.clock()
         print endtime-starttime
         
